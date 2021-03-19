@@ -14,6 +14,8 @@ from tqdm import tqdm
 from scipy.sparse import issparse, csr_matrix
 import scipy
 
+import torch.nn as nn
+import torch
 
 class PACCSLD(PACC):
     """
@@ -69,14 +71,16 @@ class AveragePoolQuantification(BinaryQuantifier):
         nprevpoints = F.get_nprevpoints_approximation(self.trials, data.n_classes)
         for sample in tqdm(
                 training.artificial_sampling_generator(self.sample_size, n_prevalences=nprevpoints, repeats=1),
-                desc='generating averages'
-        ):
+                desc='generating averages'):
             X.append(sample.instances.mean(axis=0))
             y.append(sample.prevalence()[1])
+
+        # fill the difference with additional random samples
         while len(X) < self.trials:
             sample = training.sampling(self.sample_size, F.uniform_simplex_sampling(data.n_classes))
             X.append(sample.instances.mean(axis=0))
             y.append(sample.prevalence())
+
         X = np.asarray(np.vstack(X))
         y = np.asarray(y)
 
@@ -92,8 +96,8 @@ class AveragePoolQuantification(BinaryQuantifier):
 
         # correction at 0:
         print('getting corrections...')
-        X0 = np.asarray(np.vstack([validation.sampling(self.sample_size, 0., shuffle=False).instances.mean(axis=0) for _ in range(100)]))
-        X1 = np.asarray(np.vstack([validation.sampling(self.sample_size, 1., shuffle=False).instances.mean(axis=0) for _ in range(100)]))
+        X0 = np.asarray(np.vstack([validation.sampling(self.sample_size, 1., 0., shuffle=False).instances.mean(axis=0) for _ in range(100)]))
+        X1 = np.asarray(np.vstack([validation.sampling(self.sample_size, 0., 1., shuffle=False).instances.mean(axis=0) for _ in range(100)]))
 
         if self.do_pca:
             X0 = self.pca.transform(X0)
@@ -111,7 +115,7 @@ class AveragePoolQuantification(BinaryQuantifier):
         print('done')
 
     def quantify(self, instances):
-        ave = np.asarray(instances.mean(axis=0))
+        ave = np.asarray(instances.mean(axis=0)).reshape(1, -1)
 
         if self.do_pca:
             ave = self.pca.transform(ave)
@@ -126,6 +130,44 @@ class AveragePoolQuantification(BinaryQuantifier):
 
     def get_params(self, deep=True):
         return self.learner.get_params(deep=deep)
+
+
+class TorchDataset(torch.utils.data.Dataset):
+
+    def __init__(self, instances, labels=None):
+        self.instances = instances
+        self.labels = labels
+
+    def __len__(self):
+        return len(self.instances)
+
+    def __getitem__(self, index):
+        return {'doc': self.instances[index], 'label': self.labels[index] if self.labels is not None else None}
+
+    def asDataloader(self, batch_size, shuffle):
+        return torch.utils.data.DataLoader(self, batch_size=batch_size, shuffle=shuffle)
+
+
+class DeepAverage(nn.Module, BaseQuantifier):
+
+    def __init__(self):
+        super().__init__()
+        self.layers = nn.Sequential()
+
+    def forward(self, input):
+        pass
+
+    def fit(self, data: LabelledCollection):
+        pass
+
+    def quantify(self, instances):
+        pass
+
+    def set_params(self, **parameters):
+        pass
+
+    def get_params(self, deep=True):
+        pass
 
 
 class WinnowOrthogonal(BaseEstimator):
@@ -172,3 +214,5 @@ class WinnowOrthogonal(BaseEstimator):
 
     def set_params(self, **params):
         pass
+
+

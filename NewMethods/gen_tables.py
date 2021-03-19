@@ -3,7 +3,9 @@ import numpy as np
 from os import makedirs
 import sys, os
 import pickle
-from experiments import result_path
+
+import settings
+from experiments_tweeter import result_path
 from tabular import Table
 import argparse
 
@@ -12,8 +14,7 @@ MAXTONE = 50  # sets the intensity of the maximum color reached by the worst (re
 
 makedirs(tables_path, exist_ok=True)
 
-sample_size = 100
-qp.environ['SAMPLE_SIZE'] = sample_size
+qp.environ['SAMPLE_SIZE'] = settings.SAMPLE_SIZE
 
 
 nice = {
