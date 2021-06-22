@@ -316,16 +316,21 @@ class PACC(AggregativeProbabilisticQuantifier):
 
         self.pcc = PCC(self.learner)
 
+        self.Pte_cond_estim_ = self.ProbConfusionTable(classes, y, y_)
+
+        return self
+
+    @classmethod
+    def ProbConfusionTable(cls, classes, y, y_):
         # estimate the matrix with entry (i,j) being the estimate of P(yi|yj), that is, the probability that a
         # document that belongs to yj ends up being classified as belonging to yi
         n_classes = len(classes)
         confusion = np.empty(shape=(n_classes, n_classes))
         for i, class_ in enumerate(classes):
-            confusion[i] = y_[y == class_].mean(axis=0)
+            sel = y_[y == class_]
+            confusion[i] = sel.mean(axis=0) if sel.size>0 else 0
 
-        self.Pte_cond_estim_ = confusion.T
-
-        return self
+        return confusion.T
 
     def aggregate(self, classif_posteriors):
         prevs_estim = self.pcc.aggregate(classif_posteriors)
@@ -384,6 +389,64 @@ class EMQ(AggregativeProbabilisticQuantifier):
 
             qs_prev_ = qs
             s += 1
+
+        if not converged:
+            print('[warning] the method has reached the maximum number of iterations; it might have not converged')
+
+        return qs, ps
+
+
+class IPACC(AggregativeProbabilisticQuantifier):
+    MAX_ITER = 2
+    EPSILON = 1e-2
+
+    def __init__(self, learner: BaseEstimator):
+        self.learner = learner
+
+    def fit(self, data: LabelledCollection, fit_learner=True):
+        self.learner, _ = training_helper(self.learner, data, fit_learner, ensure_probabilistic=True)
+        self.train_prevalence = F.prevalence_from_labels(data.labels, self.classes_)
+        return self
+
+    def aggregate(self, classif_posteriors, epsilon=EPSILON):
+        priors, posteriors = self.EM(self.train_prevalence, classif_posteriors, epsilon)
+        return priors
+
+    def predict_proba(self, instances, epsilon=EPSILON):
+        classif_posteriors = self.learner.predict_proba(instances)
+        priors, posteriors = self.EM(self.train_prevalence, classif_posteriors, epsilon)
+        return posteriors
+
+    @classmethod
+    def EM(cls, tr_prev, posterior_probabilities, epsilon=EPSILON):
+        from scipy.special import softmax
+        Px = posterior_probabilities
+        Ptr = np.copy(tr_prev)
+        qs = np.copy(Ptr)  # qs (the running estimate) is initialized as the training prevalence
+
+        classes = np.arange(posterior_probabilities.shape[1])
+        s, converged = 0, False
+        qs_prev_ = None
+        while not converged and s < EMQ.MAX_ITER:
+            # E-step: ps is Ps(y|xi)
+            ps_unnormalized = (qs / Ptr) * Px
+            ps = ps_unnormalized / ps_unnormalized.sum(axis=1, keepdims=True)
+            # ps = softmax(ps_unnormalized, axis=1)
+
+            # M-step:
+            y_belief = np.argmax(ps, axis=-1)
+            p_conf_table = PACC.ProbConfusionTable(classes, y_belief, ps)
+            pcc_estim = ps.mean(axis=0)
+            pacc_estims = ACC.solve_adjustment(p_conf_table, pcc_estim)
+
+            qs = pcc_estim*0.5 + pacc_estims*0.5
+
+            if qs_prev_ is not None and qp.error.mae(qs, qs_prev_) < epsilon and s > 10:
+                converged = True
+
+            qs_prev_ = qs
+            s += 1
+            # print(s, qs_prev_)
 
         if not converged:
             print('[warning] the method has reached the maximum number of iterations; it might have not converged')
