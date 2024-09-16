@@ -40,11 +40,10 @@ jobs:
     if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v1
-      - name: Install dependencies
+      - name: Build documentation
         run: |
           pip install --no-cache-dir jax[cpu] scikit-learn pandas tqdm matplotlib joblib xlrd abstention ucimlrepo certifi
           pip install --no-cache-dir -e .[composable,neural,docs]
-      - name: Build documentation
         uses: ammaraskar/sphinx-action@master
         with:
           pre-build-command: |
