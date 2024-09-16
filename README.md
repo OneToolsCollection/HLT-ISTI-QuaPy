@@ -13,8 +13,7 @@ for facilitating the analysis and interpretation of the experimental results.
 
 ### Last updates:
 
-* Version 0.1.8 is released! major changes can be consulted [here](CHANGE_LOG.txt).
-* A detailed wiki is available [here](https://github.com/HLT-ISTI/QuaPy/wiki)
+* Version 0.1.9 is released! major changes can be consulted [here](CHANGE_LOG.txt).
 * The developer API documentation is available [here](https://hlt-isti.github.io/QuaPy/build/html/modules.html)
 
 ### Installation
@@ -25,7 +24,7 @@ pip install quapy
 
 ### Cite QuaPy
 
-If you find QuaPy useful (and we hope you will), plese consider citing the original paper in your research:
+If you find QuaPy useful (and we hope you will), please consider citing the original paper in your research:
 
 ```
 @inproceedings{moreo2021quapy,
@@ -46,19 +45,18 @@ of the test set.
 
 ```python
 import quapy as qp
-from sklearn.linear_model import LogisticRegression
 
-dataset = qp.datasets.fetch_twitter('semeval16')
+dataset = qp.datasets.fetch_UCIBinaryDataset("yeast")
+training, test = dataset.train_test
 
 # create an "Adjusted Classify & Count" quantifier
-model = qp.method.aggregative.ACC(LogisticRegression())
-model.fit(dataset.training)
+model = qp.method.aggregative.ACC()
+model.fit(training)
 
-estim_prevalence = model.quantify(dataset.test.instances)
-true_prevalence  = dataset.test.prevalence()
+estim_prevalence = model.quantify(test.X)
+true_prevalence  = test.prevalence()
 
 error = qp.error.mae(true_prevalence, estim_prevalence)
-
 print(f'Mean Absolute Error (MAE)={error:.3f}')
 ```
 
@@ -69,7 +67,7 @@ class prevalence of the training set. For this reason, any quantification model
 should be tested across many samples, even ones characterized by class prevalence 
 values different or very different from those found in the training set.
 QuaPy implements sampling procedures and evaluation protocols that automate this workflow.
-See the [Wiki](https://github.com/HLT-ISTI/QuaPy/wiki) for detailed examples.
+See the [documentation](https://hlt-isti.github.io/QuaPy/build/html/) for detailed examples.
 
 ## Features
 
@@ -78,12 +76,10 @@ quantification methods based on structured output learning, HDy, QuaNet, quantif
 * Versatile functionality for performing evaluation based on sampling generation protocols (e.g., APP, NPP, etc.).
 * Implementation of most commonly used evaluation metrics (e.g., AE, RAE, NAE, NRAE, SE, KLD, NKLD, etc.).
 * Datasets frequently used in quantification (textual and numeric), including:
-    * 32 UCI Machine Learning binary datasets.
-    * 5 UCI Machine Learning multiclass datasets (_new in v0.1.8!_).
+    * 32 UCI Machine Learning datasets.
     * 11 Twitter quantification-by-sentiment datasets.
     * 3 product reviews quantification-by-sentiment datasets. 
     * 4 tasks from LeQua competition (_new in v0.1.7!_)
-    * IFCB dataset of plankton water samples (_new in v0.1.8!_).
 * Native support for binary and single-label multiclass quantification scenarios.
 * Model selection functionality that minimizes quantification-oriented loss functions.
 * Visualization tools for analysing the experimental results.
@@ -97,7 +93,6 @@ quantification methods based on structured output learning, HDy, QuaNet, quantif
 * tqdm
 * pandas, xlrd
 * matplotlib
-* ucimlrepo
 
 ## Contributing
 
@@ -105,7 +100,7 @@ In case you want to contribute improvements to quapy, please generate pull reque
   
 ## Documentation
 
-The developer API documentation is available [here](https://hlt-isti.github.io/QuaPy/build/html/index.html). 
+The [developer API documentation](https://hlt-isti.github.io/QuaPy/build/html/modules.html) is available [here](https://hlt-isti.github.io/QuaPy/build/html/index.html). 
 
 Check out our [Wiki](https://github.com/HLT-ISTI/QuaPy/wiki), in which many examples
 are provided:
@@ -120,10 +115,4 @@ are provided:
 
 ## Acknowledgments:
 
-
-
-<img src="logo/SoBigData.png" alt="SoBigData++" width="250"/> 
-
-<img src="logo/LogoQuaDaSh.png" alt="QuaDaSh" width="250"/>
-
-<img src="logo/NextGenerationEU.jpg" alt="QuaDaSh" width="250"/>
+<img src="docs/source/SoBigData.png" alt="SoBigData++" width="250"/>
