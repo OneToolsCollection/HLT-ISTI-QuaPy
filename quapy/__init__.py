@@ -1,6 +1,4 @@
 """QuaPy module for quantification"""
-from sklearn.linear_model import LogisticRegression
-
 from quapy.data import datasets
 from . import error
 from . import data
@@ -16,6 +14,11 @@ import os
 
 __version__ = '0.1.9'
 
+def qp_default_cls():
+    from sklearn.linear_model import LogisticRegression
+    return LogisticRegression(max_iter=3000)
+
+
 environ = {
     'SAMPLE_SIZE': None,
     'UNK_TOKEN': '[UNK]',
@@ -24,7 +27,7 @@ environ = {
     'PAD_INDEX': 1,
     'SVMPERF_HOME': './svm_perf_quantification',
     'N_JOBS': int(os.getenv('N_JOBS', 1)),
-    'DEFAULT_CLS': LogisticRegression(max_iter=3000)
+    'DEFAULT_CLS': qp_default_cls()
 }
 
 
