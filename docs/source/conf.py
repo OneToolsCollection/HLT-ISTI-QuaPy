@@ -46,6 +46,8 @@ extensions = [
     'myst_parser',
 ]
 
+autodoc_mock_imports = ['sklearn']
+
 autosectionlabel_prefix_document = True
 
 source_suffix = ['.rst', '.md']
